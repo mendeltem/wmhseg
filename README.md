@@ -66,11 +66,28 @@ with the same grey window: reference, BIANCA (the established method here), and
 `wmhseg`. Sorted worst-first. Everything shown comes from the public
 [WMH Segmentation Challenge 2017](https://wmh.isi.uu.nl/) test set.
 
-On that 12-case sample the mean Dice is 0.710 for `wmhseg` and 0.677 for BIANCA — but
-that gap is not an established result. `wmhseg` is better in 7 of the 12 cases, BIANCA in 5.
-The paired difference is +0.034 with a 95 % interval of [-0.021; +0.098] (bootstrap over the
-case pairs), so **zero is inside the interval**. Twelve cases cannot settle this question;
-they are there to be looked at, one slice at a time.
+### Against BIANCA, on the whole public test set
+
+The QC page shows twelve cases. The comparison was computed on all **110 cases of the public
+challenge test set, paired**:
+
+| | Dice | 
+|---|---|
+| `wmhseg` | **0.689** |
+| BIANCA | 0.599 |
+
+Paired difference **+0.089**, 95 % CI [+0.071; +0.108] (bootstrap over case pairs),
+Wilcoxon p = 4e-14, better in **93 of 110** cases.
+
+Where the difference comes from is worth knowing before you trust it: precision is better
+(0.607 vs 0.507), sensitivity is slightly *worse* (0.835 vs 0.856). `wmhseg` does not find
+more, it marks less that is not there. And the margin is largest where there is least to
+find — by lesion-load tertile +0.150 (small), +0.078 (medium), +0.039 (large),
+Spearman r = -0.50. On heavy loads BIANCA catches up and wins 10 of 37 cases.
+
+On the twelve cases shown on the QC page alone the difference would *not* have been
+significant (+0.034, CI [-0.021; +0.098]) — a reminder of what a small sample can hide.
+BIANCA here is the cross-validated FSL BIANCA trained on the same data.
 
 ## Training data, and what that means for you
 
