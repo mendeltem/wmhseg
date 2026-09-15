@@ -3,6 +3,9 @@
 WMH segmentation (white matter hyperintensities) on FLAIR, in one command.
 A 2D U-Net with Bottleneck Attention Modules (BAM), shipped with its weights.
 
+**See it before you install it: [the QC page](https://mendeltem.github.io/wmhseg/)** —
+reference, BIANCA and `wmhseg` side by side on public challenge data, worst cases first.
+
 ```bash
 pip install git+https://github.com/mendeltem/wmhseg
 wmhseg --flair FLAIR_brain_biascorr.nii.gz --out wmh.nii.gz
@@ -56,7 +59,8 @@ used for brain extraction if you want the exact same result twice.
 
 ## Quality control
 
-`qc_challenge/qc_challenge.html` shows, per case, the same axial slice three times
+**[mendeltem.github.io/wmhseg](https://mendeltem.github.io/wmhseg/)** (source: `docs/index.html`)
+shows, per case, the same axial slice three times
 with the same grey window: reference, BIANCA (the established method here), and
 `wmhseg`. Sorted worst-first. Everything shown comes from the public
 [WMH Segmentation Challenge 2017](https://wmh.isi.uu.nl/) test set.
