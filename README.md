@@ -4,7 +4,8 @@ WMH segmentation (white matter hyperintensities) on FLAIR, in one command.
 A 2D U-Net with Bottleneck Attention Modules (BAM), shipped with its weights.
 
 **See it before you install it: [the QC page](https://mendeltem.github.io/wmhseg/)** —
-reference, BIANCA and `wmhseg` side by side on public challenge data, worst cases first.
+reference, BIANCA and `wmhseg` side by side on public challenge data, worst cases first,
+with an honest note on what a 12-case sample can and cannot show.
 
 ```bash
 pip install git+https://github.com/mendeltem/wmhseg
@@ -65,8 +66,11 @@ with the same grey window: reference, BIANCA (the established method here), and
 `wmhseg`. Sorted worst-first. Everything shown comes from the public
 [WMH Segmentation Challenge 2017](https://wmh.isi.uu.nl/) test set.
 
-On that 12-case sample the mean Dice is 0.710 for `wmhseg` and 0.677 for BIANCA.
-This is a sample for looking at, not a benchmark result.
+On that 12-case sample the mean Dice is 0.710 for `wmhseg` and 0.677 for BIANCA — but
+that gap is not an established result. `wmhseg` is better in 7 of the 12 cases, BIANCA in 5.
+The paired difference is +0.034 with a 95 % interval of [-0.021; +0.098] (bootstrap over the
+case pairs), so **zero is inside the interval**. Twelve cases cannot settle this question;
+they are there to be looked at, one slice at a time.
 
 ## Training data, and what that means for you
 
