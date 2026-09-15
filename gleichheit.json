@@ -1,0 +1,115 @@
+{
+ "erzeugt": "2026-09-15 17:49",
+ "was": "wmhseg gegen die Trainingskette arena.py, gleiche Gewichte, gleiche Maske, CPU",
+ "faelle": "oeffentliche WMH-Challenge (Testteil)",
+ "je_fall": {
+  "sub-105": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 2613,
+   "voxel_arena": 2613,
+   "dice_gegen_referenz": 0.7266,
+   "sekunden": 5.5
+  },
+  "sub-070": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 10475,
+   "voxel_arena": 10475,
+   "dice_gegen_referenz": 0.7487,
+   "sekunden": 5.2
+  },
+  "sub-138": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 8641,
+   "voxel_arena": 8641,
+   "dice_gegen_referenz": 0.7984,
+   "sekunden": 4.2
+  },
+  "sub-118": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 6355,
+   "voxel_arena": 6355,
+   "dice_gegen_referenz": 0.6963,
+   "sekunden": 4.7
+  },
+  "sub-127": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 12766,
+   "voxel_arena": 12766,
+   "dice_gegen_referenz": 0.814,
+   "sekunden": 4.4
+  },
+  "sub-150": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 5771,
+   "voxel_arena": 5771,
+   "dice_gegen_referenz": 0.759,
+   "sekunden": 4.5
+  },
+  "sub-069": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 3178,
+   "voxel_arena": 3178,
+   "dice_gegen_referenz": 0.6557,
+   "sekunden": 4.8
+  },
+  "sub-163": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 1987,
+   "voxel_arena": 1987,
+   "dice_gegen_referenz": 0.7738,
+   "sekunden": 4.4
+  },
+  "sub-071": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 11031,
+   "voxel_arena": 11031,
+   "dice_gegen_referenz": 0.7128,
+   "sekunden": 4.7
+  },
+  "sub-134": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 5664,
+   "voxel_arena": 5664,
+   "dice_gegen_referenz": 0.6959,
+   "sekunden": 4.5
+  },
+  "sub-168": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 583,
+   "voxel_arena": 583,
+   "dice_gegen_referenz": 0.3699,
+   "sekunden": 4.8
+  },
+  "sub-082": {
+   "dice": 1.0,
+   "form_gleich": true,
+   "affine_gleich": true,
+   "voxel_werkzeug": 22778,
+   "voxel_arena": 22778,
+   "dice_gegen_referenz": 0.7748,
+   "sekunden": 5.0
+  }
+ }
+}

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wmhseg"
+version = "0.1.0"
+description = "WMH segmentation on brain-extracted, bias-corrected FLAIR (AQUA U-Net with BAM)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["torch", "nibabel", "numpy", "scipy"]
+
+[project.scripts]
+wmhseg = "wmhseg.cli:main"
+
+[tool.setuptools]
+packages = ["wmhseg"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+wmhseg = ["modell/*"]

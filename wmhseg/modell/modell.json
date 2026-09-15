@@ -1,0 +1,38 @@
+{
+ "netz": "aqua-bam2d",
+ "kanaele": [
+  1
+ ],
+ "eingaben": [
+  "flair"
+ ],
+ "KANTE": 256,
+ "Schwelle": 0.4,
+ "Seed": 42,
+ "n_train": 160,
+ "n_val": 41,
+ "Epochen": 40,
+ "torch": "2.6.0+cu124",
+ "Datum": "2026-09-12 19:31:37",
+ "dice_val": 0.653,
+ "parameter": {
+  "channels": [
+   32,
+   64,
+   128,
+   256
+  ],
+  "strides": [
+   2,
+   2,
+   2
+  ],
+  "bam": {
+   "r": 16,
+   "d": 4,
+   "anzahl": 7
+  }
+ },
+ "dauer_s": 9110.6,
+ "hinweis": "Fallnamen bewusst entfernt: sie bezeichnen Patienten einer nicht oeffentlichen Kohorte. Die vollstaendige Fassung bleibt lokal."
+}

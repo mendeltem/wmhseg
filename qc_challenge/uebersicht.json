@@ -1,0 +1,74 @@
+[
+ {
+  "fall": "sub-168",
+  "dice_wmhseg": 0.3699,
+  "dice_bianca": 0.5082,
+  "referenz_voxel": 758
+ },
+ {
+  "fall": "sub-069",
+  "dice_wmhseg": 0.6557,
+  "dice_bianca": 0.6393,
+  "referenz_voxel": 1806
+ },
+ {
+  "fall": "sub-134",
+  "dice_wmhseg": 0.6959,
+  "dice_bianca": 0.6177,
+  "referenz_voxel": 3151
+ },
+ {
+  "fall": "sub-118",
+  "dice_wmhseg": 0.6963,
+  "dice_bianca": 0.7063,
+  "referenz_voxel": 3606
+ },
+ {
+  "fall": "sub-071",
+  "dice_wmhseg": 0.7128,
+  "dice_bianca": 0.7688,
+  "referenz_voxel": 6281
+ },
+ {
+  "fall": "sub-105",
+  "dice_wmhseg": 0.7266,
+  "dice_bianca": 0.4137,
+  "referenz_voxel": 1937
+ },
+ {
+  "fall": "sub-070",
+  "dice_wmhseg": 0.7487,
+  "dice_bianca": 0.7148,
+  "referenz_voxel": 6709
+ },
+ {
+  "fall": "sub-150",
+  "dice_wmhseg": 0.759,
+  "dice_bianca": 0.6831,
+  "referenz_voxel": 4287
+ },
+ {
+  "fall": "sub-163",
+  "dice_wmhseg": 0.7738,
+  "dice_bianca": 0.6545,
+  "referenz_voxel": 1735
+ },
+ {
+  "fall": "sub-082",
+  "dice_wmhseg": 0.7748,
+  "dice_bianca": 0.791,
+  "referenz_voxel": 15425
+ },
+ {
+  "fall": "sub-138",
+  "dice_wmhseg": 0.7984,
+  "dice_bianca": 0.775,
+  "referenz_voxel": 6055
+ },
+ {
+  "fall": "sub-127",
+  "dice_wmhseg": 0.814,
+  "dice_bianca": 0.85,
+  "referenz_voxel": 9051
+ }
+]
