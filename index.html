@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>wmhseg QC</title>
+<meta name="description" content="Interaktive Qualitaetskontrolle: Referenz, BIANCA und wmhseg auf oeffentlichen WMH-Challenge-Faellen, Schicht fuer Schicht.">
+<style>
+ :root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--ink:#c9d1d9;--muted:#8b949e;--ref:#39d353;--bia:#f0883e;--aqua:#58a6ff}
+ *{box-sizing:border-box;margin:0;padding:0}
+ html,body{height:100%}
+ body{background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+ header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:8px 14px;border-bottom:1px solid var(--line)}
+ h1{font-size:16px;font-weight:700}h1 a{color:inherit;text-decoration:none}h1 span{color:var(--aqua)}
+ .grp{display:flex;align-items:center;gap:6px}
+ .lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+ button,.chip{font:inherit;font-size:12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer;user-select:none}
+ button:hover,.chip:hover{border-color:var(--aqua)}button.on{background:rgba(88,166,255,.18);border-color:var(--aqua)}
+ .chip{display:inline-flex;align-items:center;gap:6px}.chip.aus{opacity:.4}.chip i{width:10px;height:10px;border-radius:2px;display:inline-block}
+ input[type=range]{accent-color:var(--aqua);cursor:pointer;width:90px}
+ .hint{margin-left:auto;color:var(--muted);font-size:11px}
+ main{flex:1;display:flex;min-height:0}
+ aside{width:250px;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+ aside .kopf{padding:8px 12px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--line)}
+ #liste{flex:1;overflow:auto;scrollbar-color:#30363d transparent}
+ .fall{display:grid;grid-template-columns:1fr auto auto;gap:0 8px;padding:6px 12px;cursor:pointer;border-bottom:1px solid #21262d;font-size:12.5px}
+ .fall:hover{background:#1c2128}.fall.on{background:rgba(88,166,255,.14);box-shadow:inset 3px 0 0 var(--aqua)}
+ .fall small{grid-column:1/-1;color:var(--muted);font-size:11px}
+ .a{color:var(--aqua)}.b{color:var(--bia)}
+ select{font:inherit;font-size:12px;width:100%;margin:6px 0 4px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+ .spalten{display:grid;grid-template-columns:1fr auto auto;gap:0 8px;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+ #ansicht{flex:1;display:flex;flex-direction:column;min-width:0}
+ #fenster{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;min-height:0}
+ .kachel{position:relative;background:#000;border-radius:6px;overflow:hidden;min-height:0}
+ .kachel canvas{width:100%;height:100%;display:block}
+ .kachel .titel{position:absolute;left:8px;top:6px;font-size:12px;font-weight:600;padding:2px 7px;border-radius:4px;background:rgba(13,17,23,.75);pointer-events:none}
+ .kachel .wert{position:absolute;right:8px;bottom:6px;font-size:12px;padding:2px 7px;border-radius:4px;background:rgba(13,17,23,.75);color:var(--muted);pointer-events:none}
+ #fuss{display:flex;align-items:center;gap:12px;padding:6px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+ #fuss input[type=range]{flex:1;width:auto}
+ #fuss b{color:var(--ink)}
+ #lade{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,17,23,.6);font-size:13px;color:var(--ink)}
+ #ansicht.laedt #lade{display:flex}
+ #info{scrollbar-color:#30363d transparent;position:absolute;right:12px;top:52px;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 70px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 18px;display:none;z-index:5;font-size:13px}
+ #info.on{display:block}#info h2{font-size:14px;margin:12px 0 4px}#info h2:first-child{margin-top:0}#info p{color:var(--ink);margin:4px 0 8px}#info a{color:var(--aqua)}
+ #info table{border-collapse:collapse;margin:6px 0}#info td,#info th{border-bottom:1px solid var(--line);padding:3px 12px 3px 0;text-align:left;font-size:12.5px}
+ kbd{font:11px ui-monospace,monospace;background:#21262d;border:1px solid var(--line);border-radius:4px;padding:0 5px}
+ @media (max-width:860px){
+   aside{width:150px}.fall{grid-template-columns:1fr;gap:0}.fall .b{display:none}
+   #fenster{grid-template-columns:1fr;grid-auto-rows:1fr}.hint{display:none}
+ }
+</style></head><body>
+<header>
+  <h1><a href="https://github.com/mendeltem/wmhseg">wmhseg <span>QC</span></a></h1>
+  <div class="grp"><span class="lbl">Ansicht</span>
+    <button data-v="ax" class="on">Axial</button><button data-v="cor">Koronar</button><button data-v="sag">Sagittal</button></div>
+  <div class="grp"><span class="lbl">Masken</span>
+    <span class="chip" id="maskeChip"><i style="background:var(--ref)"></i>Referenz &middot; <i style="background:var(--bia)"></i>BIANCA &middot; <i style="background:var(--aqua)"></i>wmhseg</span></div>
+  <div class="grp"><span class="lbl">Deckkraft</span><input type="range" id="op" min="0" max="100" value="55"><span id="opv" style="font-size:12px;width:34px">55%</span></div>
+  <div class="grp"><button id="fadenkreuz">Fadenkreuz</button><button id="infoKnopf">Zahlen &amp; Hinweise</button></div>
+  <span class="hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> Fall &middot; Rad / <kbd>&larr;</kbd><kbd>&rarr;</kbd> Schicht &middot; <kbd>M</kbd> Masken aus/an &middot; Ziehen = Fenster, Rechts-Ziehen = Zoom</span>
+</header>
+<main>
+  <aside>
+    <div class="kopf"><span id="anzahl"></span> Faelle &middot; <kbd>&uarr;</kbd><kbd>&darr;</kbd> oder anklicken<br>
+      <select id="sortierung" title="Reihenfolge">
+        <option value="dice">schlechtester Dice (wmhseg) zuerst</option>
+        <option value="diff">wo BIANCA am weitesten vorn liegt</option>
+        <option value="last">groesste Laesionslast zuerst</option>
+        <option value="klein">kleinste Laesionslast zuerst</option>
+        <option value="name">nach Fallnummer</option>
+      </select>
+      <div class="spalten"><span>Fall</span><span class="a">wmhseg</span><span class="b">BIANCA</span></div></div>
+    <div id="liste"></div>
+  </aside>
+  <div id="ansicht">
+    <div id="fenster">
+      <div class="kachel"><canvas id="c0"></canvas><span class="titel" style="color:var(--ref)">Referenz</span><span class="wert" id="w0"></span></div>
+      <div class="kachel"><canvas id="c1"></canvas><span class="titel" style="color:var(--bia)">BIANCA</span><span class="wert" id="w1"></span></div>
+      <div class="kachel"><canvas id="c2"></canvas><span class="titel" style="color:var(--aqua)">wmhseg</span><span class="wert" id="w2"></span></div>
+      <div id="lade">Fall wird geladen &hellip;</div>
+    </div>
+    <div id="fuss">
+      <span id="fallName"></span>
+      <input type="range" id="schicht" min="0" max="1" value="0" title="Schicht">
+      <span id="schichtText"></span>
+    </div>
+  </div>
+</main>
+<div id="info">
+  <h2>Was man hier sieht</h2>
+  <p>Drei gekoppelte Fenster auf demselben FLAIR, dieselbe Schicht, dasselbe Graufenster: links die
+  Referenzmaske der Challenge, in der Mitte BIANCA (das bisherige Verfahren, FSL), rechts <code>wmhseg</code>.
+  Mit dem Mausrad geht es durch die Schichten, mit <kbd>&uarr;</kbd><kbd>&darr;</kbd> durch die Faelle.
+  Jeder Fall startet in der Schicht mit der groessten Laesionslast.</p>
+  <h2 id="zahlenTitel"></h2>
+  <p id="zahlenText"></p>
+  <p id="woher"></p>
+  <table id="mtab"></table>
+  <h2>Die Faelle auf dieser Seite</h2>
+  <p id="stichprobe"></p>
+  <table id="tab"></table>
+  <h2>Datenquelle und Aufbereitung</h2>
+  <p>Ausschliesslich der oeffentliche Testteil der <a href="https://wmh.isi.uu.nl/">WMH Segmentation Challenge</a>:
+  Kuijf, H. J. et al., <i>Standardized Assessment of Automatic Segmentation of White Matter Hyperintensities and Results of the
+  WMH Segmentation Challenge</i>, IEEE TMI 38(11), 2019; Daten: <a href="https://doi.org/10.34894/AECRSD">doi:10.34894/AECRSD</a>,
+  Lizenz <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Die Bilder hier stehen unter derselben Lizenz
+  und sind <b>veraendert</b>: hirnextrahiert, bias-korrigiert, auf den Hirnkasten beschnitten und auf 8 Bit gefenstert
+  (1.&ndash;99. Perzentil) &mdash; zum Ansehen, nicht zum Rechnen. Die Referenzmasken sind unveraendert (Label 1).
+  Es sind keine Bilder aus nicht oeffentlichen Kohorten enthalten. Alle Zahlen stammen aus den Originalvolumen, nach der
+  Regel der Challenge (Vorhersage auf Label 2 wird geloescht).
+  Betrachter: <a href="https://github.com/niivue/niivue">NiiVue</a> (BSD-2-Clause).</p>
+</div>
+
+<script src="niivue.umd.js"></script>
+<script>
+const FAELLE = [{"sub": "sub-162", "standort": "Utrecht", "dice_wmhseg": 0.2459, "dice_bianca": 0.1237, "ref_voxel": 361, "ref_ml": 0.99, "ml_wmhseg": 4.58, "ml_bianca": 14.82, "hd95_wmhseg": 20.2, "hd95_bianca": 22.8, "lrec_wmhseg": 0.778, "lrec_bianca": 0.926, "laes": 27, "mm0": [10.87, -25.09, 31.87], "schichten": 48, "kb": 726}, {"sub": "sub-130", "standort": "Singapore", "dice_wmhseg": 0.3687, "dice_bianca": 0.2874, "ref_voxel": 322, "ref_ml": 0.97, "ml_wmhseg": 0.64, "ml_bianca": 4.71, "hd95_wmhseg": 38.6, "hd95_bianca": 38.6, "lrec_wmhseg": 0.381, "lrec_bianca": 0.667, "laes": 21, "mm0": [-19.36, 7.72, 33.18], "schichten": 47, "kb": 569}, {"sub": "sub-168", "standort": "Utrecht", "dice_wmhseg": 0.3699, "dice_bianca": 0.5082, "ref_voxel": 758, "ref_ml": 2.09, "ml_wmhseg": 1.61, "ml_bianca": 4.28, "hd95_wmhseg": 28.0, "hd95_bianca": 18.2, "lrec_wmhseg": 0.524, "lrec_bianca": 0.714, "laes": 21, "mm0": [13.28, -32.24, 3.9], "schichten": 48, "kb": 732}, {"sub": "sub-064", "standort": "Amsterdam", "dice_wmhseg": 0.3804, "dice_bianca": 0.2069, "ref_voxel": 181, "ref_ml": 0.85, "ml_wmhseg": 1.45, "ml_bianca": 6.22, "hd95_wmhseg": 30.9, "hd95_bianca": 22.2, "lrec_wmhseg": 0.364, "lrec_bianca": 0.879, "laes": 33, "mm0": [27.78, -3.59, 31.11], "schichten": 46, "kb": 420}, {"sub": "sub-078", "standort": "Amsterdam", "dice_wmhseg": 0.3862, "dice_bianca": 0.4413, "ref_voxel": 555, "ref_ml": 1.95, "ml_wmhseg": 1.2, "ml_bianca": 5.78, "hd95_wmhseg": 14.7, "hd95_bianca": 15.9, "lrec_wmhseg": 0.318, "lrec_bianca": 0.955, "laes": 44, "mm0": [11.66, -30.3, 12.39], "schichten": 53, "kb": 582}, {"sub": "sub-167", "standort": "Utrecht", "dice_wmhseg": 0.4021, "dice_bianca": 0.2261, "ref_voxel": 625, "ref_ml": 1.72, "ml_wmhseg": 4.53, "ml_bianca": 11.73, "hd95_wmhseg": 17.4, "hd95_bianca": 24.9, "lrec_wmhseg": 0.791, "lrec_bianca": 0.791, "laes": 43, "mm0": [-4.85, -22.53, 6.72], "schichten": 48, "kb": 690}, {"sub": "sub-114", "standort": "Singapore", "dice_wmhseg": 0.424, "dice_bianca": 0.3687, "ref_voxel": 301, "ref_ml": 0.9, "ml_wmhseg": 2.65, "ml_bianca": 3.82, "hd95_wmhseg": 24.5, "hd95_bianca": 15.9, "lrec_wmhseg": 0.821, "lrec_bianca": 0.893, "laes": 28, "mm0": [20.11, 19.74, 11.34], "schichten": 44, "kb": 502}, {"sub": "sub-157", "standort": "Utrecht", "dice_wmhseg": 0.4794, "dice_bianca": 0.3357, "ref_voxel": 703, "ref_ml": 1.94, "ml_wmhseg": 4.55, "ml_bianca": 7.55, "hd95_wmhseg": 11.3, "hd95_bianca": 19.9, "lrec_wmhseg": 0.587, "lrec_bianca": 0.652, "laes": 46, "mm0": [-14.92, -48.33, -39.32], "schichten": 47, "kb": 703}, {"sub": "sub-143", "standort": "Utrecht", "dice_wmhseg": 0.4858, "dice_bianca": 0.5634, "ref_voxel": 551, "ref_ml": 1.52, "ml_wmhseg": 0.91, "ml_bianca": 2.68, "hd95_wmhseg": 25.8, "hd95_bianca": 12.7, "lrec_wmhseg": 0.378, "lrec_bianca": 0.489, "laes": 45, "mm0": [-0.66, -5.33, 19.19], "schichten": 47, "kb": 625}, {"sub": "sub-090", "standort": "Amsterdam", "dice_wmhseg": 0.4934, "dice_bianca": 0.3455, "ref_voxel": 535, "ref_ml": 1.88, "ml_wmhseg": 2.38, "ml_bianca": 8.56, "hd95_wmhseg": 9.4, "hd95_bianca": 12.3, "lrec_wmhseg": 0.46, "lrec_bianca": 0.873, "laes": 63, "mm0": [-2.64, 40.67, 47.81], "schichten": 50, "kb": 583}, {"sub": "sub-093", "standort": "Amsterdam", "dice_wmhseg": 0.4956, "dice_bianca": 0.3528, "ref_voxel": 557, "ref_ml": 1.96, "ml_wmhseg": 2.8, "ml_bianca": 7.63, "hd95_wmhseg": 7.0, "hd95_bianca": 14.2, "lrec_wmhseg": 0.39, "lrec_bianca": 0.927, "laes": 41, "mm0": [2.2, -42.49, -19.44], "schichten": 49, "kb": 540}, {"sub": "sub-109", "standort": "Amsterdam", "dice_wmhseg": 0.5167, "dice_bianca": 0.3471, "ref_voxel": 701, "ref_ml": 1.23, "ml_wmhseg": 1.03, "ml_bianca": 4.72, "hd95_wmhseg": 15.6, "hd95_bianca": 18.7, "lrec_wmhseg": 0.405, "lrec_bianca": 0.857, "laes": 42, "mm0": [4.82, 19.78, -0.28], "schichten": 53, "kb": 1051}, {"sub": "sub-159", "standort": "Utrecht", "dice_wmhseg": 0.5452, "dice_bianca": 0.354, "ref_voxel": 1547, "ref_ml": 4.26, "ml_wmhseg": 4.36, "ml_bianca": 1.87, "hd95_wmhseg": 13.5, "hd95_bianca": 24.9, "lrec_wmhseg": 0.626, "lrec_bianca": 0.364, "laes": 99, "mm0": [-1.35, -5.49, 61.25], "schichten": 47, "kb": 679}, {"sub": "sub-116", "standort": "Singapore", "dice_wmhseg": 0.5464, "dice_bianca": 0.3981, "ref_voxel": 452, "ref_ml": 1.36, "ml_wmhseg": 0.94, "ml_bianca": 3.69, "hd95_wmhseg": 14.5, "hd95_bianca": 28.0, "lrec_wmhseg": 0.5, "lrec_bianca": 0.719, "laes": 32, "mm0": [18.71, -8.08, 16.66], "schichten": 47, "kb": 563}, {"sub": "sub-067", "standort": "Amsterdam", "dice_wmhseg": 0.5473, "dice_bianca": 0.2751, "ref_voxel": 496, "ref_ml": 2.34, "ml_wmhseg": 4.65, "ml_bianca": 9.3, "hd95_wmhseg": 6.5, "hd95_bianca": 29.1, "lrec_wmhseg": 0.682, "lrec_bianca": 0.545, "laes": 44, "mm0": [14.63, 102.53, 28.96], "schichten": 52, "kb": 414}, {"sub": "sub-089", "standort": "Amsterdam", "dice_wmhseg": 0.5501, "dice_bianca": 0.2913, "ref_voxel": 321, "ref_ml": 1.13, "ml_wmhseg": 1.33, "ml_bianca": 6.31, "hd95_wmhseg": 6.6, "hd95_bianca": 24.7, "lrec_wmhseg": 0.762, "lrec_bianca": 0.952, "laes": 21, "mm0": [3.4, -48.08, -29.09], "schichten": 49, "kb": 547}, {"sub": "sub-073", "standort": "Amsterdam", "dice_wmhseg": 0.5538, "dice_bianca": 0.2957, "ref_voxel": 687, "ref_ml": 2.42, "ml_wmhseg": 2.82, "ml_bianca": 8.81, "hd95_wmhseg": 11.3, "hd95_bianca": 17.0, "lrec_wmhseg": 0.412, "lrec_bianca": 0.787, "laes": 80, "mm0": [24.99, 40.8, 36.17], "schichten": 49, "kb": 537}, {"sub": "sub-080", "standort": "Amsterdam", "dice_wmhseg": 0.5689, "dice_bianca": 0.3156, "ref_voxel": 233, "ref_ml": 0.82, "ml_wmhseg": 1.17, "ml_bianca": 3.61, "hd95_wmhseg": 6.4, "hd95_bianca": 22.3, "lrec_wmhseg": 0.625, "lrec_bianca": 0.792, "laes": 24, "mm0": [-16.06, -19.78, 12.06], "schichten": 45, "kb": 442}, {"sub": "sub-091", "standort": "Amsterdam", "dice_wmhseg": 0.5784, "dice_bianca": 0.5361, "ref_voxel": 937, "ref_ml": 3.29, "ml_wmhseg": 6.61, "ml_bianca": 7.57, "hd95_wmhseg": 4.8, "hd95_bianca": 6.4, "lrec_wmhseg": 0.76, "lrec_bianca": 0.771, "laes": 96, "mm0": [3.55, 18.14, 21.68], "schichten": 48, "kb": 519}, {"sub": "sub-164", "standort": "Utrecht", "dice_wmhseg": 0.5852, "dice_bianca": 0.3396, "ref_voxel": 1086, "ref_ml": 2.99, "ml_wmhseg": 5.14, "ml_bianca": 12.49, "hd95_wmhseg": 15.2, "hd95_bianca": 15.3, "lrec_wmhseg": 0.692, "lrec_bianca": 0.865, "laes": 52, "mm0": [-1.67, -30.07, -29.99], "schichten": 46, "kb": 662}, {"sub": "sub-085", "standort": "Amsterdam", "dice_wmhseg": 0.5906, "dice_bianca": 0.5226, "ref_voxel": 1397, "ref_ml": 4.91, "ml_wmhseg": 11.23, "ml_bianca": 13.39, "hd95_wmhseg": 3.4, "hd95_bianca": 5.1, "lrec_wmhseg": 0.967, "lrec_bianca": 0.967, "laes": 60, "mm0": [-2.25, 2.14, 57.13], "schichten": 47, "kb": 462}, {"sub": "sub-111", "standort": "Singapore", "dice_wmhseg": 0.5908, "dice_bianca": 0.5858, "ref_voxel": 2456, "ref_ml": 7.37, "ml_wmhseg": 16.46, "ml_bianca": 16.43, "hd95_wmhseg": 4.7, "hd95_bianca": 4.7, "lrec_wmhseg": 0.855, "lrec_bianca": 0.711, "laes": 83, "mm0": [-1.09, 16.23, 29.63], "schichten": 47, "kb": 636}, {"sub": "sub-158", "standort": "Utrecht", "dice_wmhseg": 0.595, "dice_bianca": 0.3796, "ref_voxel": 647, "ref_ml": 1.78, "ml_wmhseg": 1.83, "ml_bianca": 5.85, "hd95_wmhseg": 17.5, "hd95_bianca": 13.9, "lrec_wmhseg": 0.436, "lrec_bianca": 0.6, "laes": 55, "mm0": [-5.93, -28.46, -28.83], "schichten": 46, "kb": 593}, {"sub": "sub-100", "standort": "Amsterdam", "dice_wmhseg": 0.5963, "dice_bianca": 0.5163, "ref_voxel": 1710, "ref_ml": 6.01, "ml_wmhseg": 12.74, "ml_bianca": 15.73, "hd95_wmhseg": 3.8, "hd95_bianca": 6.3, "lrec_wmhseg": 0.865, "lrec_bianca": 0.865, "laes": 89, "mm0": [-5.27, 2.13, 51.52], "schichten": 51, "kb": 540}, {"sub": "sub-068", "standort": "Amsterdam", "dice_wmhseg": 0.5986, "dice_bianca": 0.266, "ref_voxel": 191, "ref_ml": 0.9, "ml_wmhseg": 1.73, "ml_bianca": 4.92, "hd95_wmhseg": 6.1, "hd95_bianca": 27.1, "lrec_wmhseg": 0.778, "lrec_bianca": 0.815, "laes": 27, "mm0": [-16.22, -24.25, -25.47], "schichten": 46, "kb": 315}, {"sub": "sub-097", "standort": "Amsterdam", "dice_wmhseg": 0.6066, "dice_bianca": 0.4514, "ref_voxel": 2058, "ref_ml": 7.24, "ml_wmhseg": 9.08, "ml_bianca": 22.1, "hd95_wmhseg": 6.8, "hd95_bianca": 12.2, "lrec_wmhseg": 0.521, "lrec_bianca": 0.829, "laes": 146, "mm0": [0.41, 42.08, 21.54], "schichten": 53, "kb": 545}, {"sub": "sub-119", "standort": "Singapore", "dice_wmhseg": 0.6109, "dice_bianca": 0.2607, "ref_voxel": 798, "ref_ml": 2.39, "ml_wmhseg": 2.38, "ml_bianca": 5.04, "hd95_wmhseg": 6.8, "hd95_bianca": 32.2, "lrec_wmhseg": 0.564, "lrec_bianca": 0.564, "laes": 39, "mm0": [-8.54, 27.39, 33.48], "schichten": 48, "kb": 566}, {"sub": "sub-117", "standort": "Singapore", "dice_wmhseg": 0.6116, "dice_bianca": 0.6229, "ref_voxel": 1097, "ref_ml": 3.29, "ml_wmhseg": 2.12, "ml_bianca": 5.03, "hd95_wmhseg": 7.1, "hd95_bianca": 7.1, "lrec_wmhseg": 0.493, "lrec_bianca": 0.594, "laes": 69, "mm0": [-1.26, 32.21, 47.49], "schichten": 46, "kb": 537}, {"sub": "sub-103", "standort": "Amsterdam", "dice_wmhseg": 0.6131, "dice_bianca": 0.3598, "ref_voxel": 3291, "ref_ml": 5.76, "ml_wmhseg": 9.72, "ml_bianca": 20.3, "hd95_wmhseg": 3.5, "hd95_bianca": 23.7, "lrec_wmhseg": 0.623, "lrec_bianca": 0.677, "laes": 130, "mm0": [3.77, -23.62, 26.3], "schichten": 45, "kb": 801}, {"sub": "sub-081", "standort": "Amsterdam", "dice_wmhseg": 0.6186, "dice_bianca": 0.4139, "ref_voxel": 982, "ref_ml": 3.45, "ml_wmhseg": 6.64, "ml_bianca": 13.01, "hd95_wmhseg": 4.8, "hd95_bianca": 10.3, "lrec_wmhseg": 0.658, "lrec_bianca": 0.921, "laes": 38, "mm0": [1.54, 31.08, -21.34], "schichten": 56, "kb": 532}, {"sub": "sub-077", "standort": "Amsterdam", "dice_wmhseg": 0.6204, "dice_bianca": 0.3269, "ref_voxel": 961, "ref_ml": 3.38, "ml_wmhseg": 6.24, "ml_bianca": 17.06, "hd95_wmhseg": 3.4, "hd95_bianca": 8.5, "lrec_wmhseg": 0.73, "lrec_bianca": 1.0, "laes": 37, "mm0": [19.55, 32.98, 0.9], "schichten": 54, "kb": 505}, {"sub": "sub-141", "standort": "Utrecht", "dice_wmhseg": 0.624, "dice_bianca": 0.4318, "ref_voxel": 1489, "ref_ml": 4.1, "ml_wmhseg": 4.42, "ml_bianca": 10.43, "hd95_wmhseg": 8.2, "hd95_bianca": 12.0, "lrec_wmhseg": 0.545, "lrec_bianca": 0.74, "laes": 77, "mm0": [24.65, 19.16, 36.44], "schichten": 45, "kb": 670}, {"sub": "sub-104", "standort": "Amsterdam", "dice_wmhseg": 0.6253, "dice_bianca": 0.2563, "ref_voxel": 653, "ref_ml": 1.14, "ml_wmhseg": 1.25, "ml_bianca": 7.43, "hd95_wmhseg": 9.6, "hd95_bianca": 17.2, "lrec_wmhseg": 0.485, "lrec_bianca": 0.939, "laes": 33, "mm0": [-3.81, 16.36, -17.13], "schichten": 50, "kb": 890}, {"sub": "sub-084", "standort": "Amsterdam", "dice_wmhseg": 0.6325, "dice_bianca": 0.5116, "ref_voxel": 909, "ref_ml": 3.2, "ml_wmhseg": 4.55, "ml_bianca": 7.13, "hd95_wmhseg": 5.5, "hd95_bianca": 9.6, "lrec_wmhseg": 0.598, "lrec_bianca": 0.617, "laes": 107, "mm0": [3.59, 12.85, 16.56], "schichten": 49, "kb": 528}, {"sub": "sub-129", "standort": "Singapore", "dice_wmhseg": 0.6357, "dice_bianca": 0.658, "ref_voxel": 2958, "ref_ml": 8.87, "ml_wmhseg": 18.52, "ml_bianca": 14.55, "hd95_wmhseg": 3.3, "hd95_bianca": 3.7, "lrec_wmhseg": 0.971, "lrec_bianca": 0.738, "laes": 103, "mm0": [13.43, -10.23, 25.08], "schichten": 47, "kb": 505}, {"sub": "sub-115", "standort": "Singapore", "dice_wmhseg": 0.6374, "dice_bianca": 0.5474, "ref_voxel": 1020, "ref_ml": 3.06, "ml_wmhseg": 3.43, "ml_bianca": 6.03, "hd95_wmhseg": 3.7, "hd95_bianca": 15.6, "lrec_wmhseg": 0.766, "lrec_bianca": 0.83, "laes": 47, "mm0": [8.0, 20.93, 11.39], "schichten": 48, "kb": 634}, {"sub": "sub-170", "standort": "Utrecht", "dice_wmhseg": 0.6384, "dice_bianca": 0.7382, "ref_voxel": 70831, "ref_ml": 195.15, "ml_wmhseg": 96.74, "ml_bianca": 118.46, "hd95_wmhseg": 6.6, "hd95_bianca": 4.9, "lrec_wmhseg": 0.333, "lrec_bianca": 0.238, "laes": 42, "mm0": [-2.29, -8.62, 22.97], "schichten": 47, "kb": 817}, {"sub": "sub-063", "standort": "Amsterdam", "dice_wmhseg": 0.6421, "dice_bianca": 0.5699, "ref_voxel": 1793, "ref_ml": 8.47, "ml_wmhseg": 17.29, "ml_bianca": 18.68, "hd95_wmhseg": 3.6, "hd95_bianca": 11.2, "lrec_wmhseg": 0.938, "lrec_bianca": 0.815, "laes": 65, "mm0": [8.4, 42.88, 7.22], "schichten": 47, "kb": 348}, {"sub": "sub-086", "standort": "Amsterdam", "dice_wmhseg": 0.645, "dice_bianca": 0.5569, "ref_voxel": 1830, "ref_ml": 6.43, "ml_wmhseg": 12.6, "ml_bianca": 16.0, "hd95_wmhseg": 3.4, "hd95_bianca": 5.4, "lrec_wmhseg": 0.914, "lrec_bianca": 0.897, "laes": 58, "mm0": [-7.33, -3.61, 0.61], "schichten": 50, "kb": 540}, {"sub": "sub-079", "standort": "Amsterdam", "dice_wmhseg": 0.6464, "dice_bianca": 0.4487, "ref_voxel": 938, "ref_ml": 3.3, "ml_wmhseg": 5.51, "ml_bianca": 10.96, "hd95_wmhseg": 3.8, "hd95_bianca": 9.4, "lrec_wmhseg": 0.822, "lrec_bianca": 0.911, "laes": 45, "mm0": [-3.68, 6.62, 0.54], "schichten": 51, "kb": 602}, {"sub": "sub-142", "standort": "Utrecht", "dice_wmhseg": 0.6466, "dice_bianca": 0.5806, "ref_voxel": 2410, "ref_ml": 6.64, "ml_wmhseg": 7.83, "ml_bianca": 12.54, "hd95_wmhseg": 9.4, "hd95_bianca": 7.4, "lrec_wmhseg": 0.603, "lrec_bianca": 0.795, "laes": 73, "mm0": [5.2, -6.06, 31.97], "schichten": 45, "kb": 619}, {"sub": "sub-131", "standort": "Singapore", "dice_wmhseg": 0.652, "dice_bianca": 0.6103, "ref_voxel": 1445, "ref_ml": 4.33, "ml_wmhseg": 7.7, "ml_bianca": 8.69, "hd95_wmhseg": 3.2, "hd95_bianca": 3.7, "lrec_wmhseg": 0.84, "lrec_bianca": 0.889, "laes": 81, "mm0": [5.87, -18.25, 22.4], "schichten": 46, "kb": 488}, {"sub": "sub-069", "standort": "Amsterdam", "dice_wmhseg": 0.6557, "dice_bianca": 0.6393, "ref_voxel": 1806, "ref_ml": 8.53, "ml_wmhseg": 15.01, "ml_bianca": 10.82, "hd95_wmhseg": 3.3, "hd95_bianca": 4.9, "lrec_wmhseg": 0.875, "lrec_bianca": 0.734, "laes": 184, "mm0": [7.61, 15.7, 11.32], "schichten": 46, "kb": 333}, {"sub": "sub-139", "standort": "Singapore", "dice_wmhseg": 0.6631, "dice_bianca": 0.6245, "ref_voxel": 1486, "ref_ml": 4.46, "ml_wmhseg": 7.8, "ml_bianca": 8.16, "hd95_wmhseg": 6.8, "hd95_bianca": 7.9, "lrec_wmhseg": 0.833, "lrec_bianca": 0.833, "laes": 60, "mm0": [9.92, 11.89, 34.05], "schichten": 47, "kb": 480}, {"sub": "sub-148", "standort": "Utrecht", "dice_wmhseg": 0.6647, "dice_bianca": 0.4007, "ref_voxel": 777, "ref_ml": 2.14, "ml_wmhseg": 2.59, "ml_bianca": 7.16, "hd95_wmhseg": 12.8, "hd95_bianca": 14.6, "lrec_wmhseg": 0.62, "lrec_bianca": 0.84, "laes": 50, "mm0": [-7.68, 60.73, 39.21], "schichten": 46, "kb": 663}, {"sub": "sub-061", "standort": "Amsterdam", "dice_wmhseg": 0.6706, "dice_bianca": 0.6106, "ref_voxel": 968, "ref_ml": 4.57, "ml_wmhseg": 8.29, "ml_bianca": 8.62, "hd95_wmhseg": 3.0, "hd95_bianca": 8.4, "lrec_wmhseg": 0.772, "lrec_bianca": 0.737, "laes": 57, "mm0": [8.38, 59.59, -2.94], "schichten": 51, "kb": 362}, {"sub": "sub-124", "standort": "Singapore", "dice_wmhseg": 0.6871, "dice_bianca": 0.5019, "ref_voxel": 1555, "ref_ml": 4.67, "ml_wmhseg": 7.6, "ml_bianca": 12.26, "hd95_wmhseg": 4.4, "hd95_bianca": 11.6, "lrec_wmhseg": 0.83, "lrec_bianca": 0.818, "laes": 88, "mm0": [-13.85, -5.79, 30.89], "schichten": 46, "kb": 649}, {"sub": "sub-156", "standort": "Utrecht", "dice_wmhseg": 0.6926, "dice_bianca": 0.5862, "ref_voxel": 5012, "ref_ml": 13.81, "ml_wmhseg": 20.87, "ml_bianca": 24.52, "hd95_wmhseg": 3.6, "hd95_bianca": 21.0, "lrec_wmhseg": 0.795, "lrec_bianca": 0.718, "laes": 78, "mm0": [3.61, -23.31, 63.18], "schichten": 44, "kb": 623}, {"sub": "sub-120", "standort": "Singapore", "dice_wmhseg": 0.6944, "dice_bianca": 0.5618, "ref_voxel": 2540, "ref_ml": 7.62, "ml_wmhseg": 13.52, "ml_bianca": 18.66, "hd95_wmhseg": 4.7, "hd95_bianca": 7.2, "lrec_wmhseg": 0.875, "lrec_bianca": 0.917, "laes": 24, "mm0": [0.13, -17.38, 7.15], "schichten": 46, "kb": 518}, {"sub": "sub-118", "standort": "Singapore", "dice_wmhseg": 0.6997, "dice_bianca": 0.7076, "ref_voxel": 3606, "ref_ml": 10.82, "ml_wmhseg": 18.92, "ml_bianca": 17.24, "hd95_wmhseg": 3.2, "hd95_bianca": 3.2, "lrec_wmhseg": 0.932, "lrec_bianca": 0.856, "laes": 118, "mm0": [-2.43, 23.12, 35.89], "schichten": 48, "kb": 598}, {"sub": "sub-075", "standort": "Amsterdam", "dice_wmhseg": 0.702, "dice_bianca": 0.6202, "ref_voxel": 1791, "ref_ml": 6.3, "ml_wmhseg": 8.83, "ml_bianca": 9.78, "hd95_wmhseg": 3.2, "hd95_bianca": 4.1, "lrec_wmhseg": 0.688, "lrec_bianca": 0.752, "laes": 109, "mm0": [-13.15, 19.62, 12.68], "schichten": 51, "kb": 563}, {"sub": "sub-106", "standort": "Amsterdam", "dice_wmhseg": 0.7025, "dice_bianca": 0.5787, "ref_voxel": 2281, "ref_ml": 3.99, "ml_wmhseg": 4.6, "ml_bianca": 7.41, "hd95_wmhseg": 4.4, "hd95_bianca": 9.8, "lrec_wmhseg": 0.636, "lrec_bianca": 0.727, "laes": 110, "mm0": [7.11, 6.67, 18.72], "schichten": 50, "kb": 865}, {"sub": "sub-098", "standort": "Amsterdam", "dice_wmhseg": 0.7036, "dice_bianca": 0.6493, "ref_voxel": 2150, "ref_ml": 7.56, "ml_wmhseg": 10.42, "ml_bianca": 13.28, "hd95_wmhseg": 3.0, "hd95_bianca": 5.1, "lrec_wmhseg": 0.845, "lrec_bianca": 0.824, "laes": 142, "mm0": [13.47, 19.25, -2.01], "schichten": 47, "kb": 492}, {"sub": "sub-134", "standort": "Singapore", "dice_wmhseg": 0.7113, "dice_bianca": 0.629, "ref_voxel": 3151, "ref_ml": 9.45, "ml_wmhseg": 16.42, "ml_bianca": 18.32, "hd95_wmhseg": 3.7, "hd95_bianca": 6.4, "lrec_wmhseg": 0.941, "lrec_bianca": 0.735, "laes": 68, "mm0": [15.88, 27.25, 40.95], "schichten": 47, "kb": 674}, {"sub": "sub-099", "standort": "Amsterdam", "dice_wmhseg": 0.7122, "dice_bianca": 0.6453, "ref_voxel": 3638, "ref_ml": 12.79, "ml_wmhseg": 21.52, "ml_bianca": 26.09, "hd95_wmhseg": 3.0, "hd95_bianca": 3.6, "lrec_wmhseg": 0.913, "lrec_bianca": 0.935, "laes": 46, "mm0": [11.46, 43.05, 28.32], "schichten": 48, "kb": 540}, {"sub": "sub-147", "standort": "Utrecht", "dice_wmhseg": 0.7148, "dice_bianca": 0.7038, "ref_voxel": 4626, "ref_ml": 12.75, "ml_wmhseg": 18.42, "ml_bianca": 19.69, "hd95_wmhseg": 4.0, "hd95_bianca": 4.2, "lrec_wmhseg": 0.707, "lrec_bianca": 0.764, "laes": 123, "mm0": [-10.42, -8.71, 31.79], "schichten": 48, "kb": 797}, {"sub": "sub-140", "standort": "Singapore", "dice_wmhseg": 0.7197, "dice_bianca": 0.5686, "ref_voxel": 848, "ref_ml": 2.54, "ml_wmhseg": 3.38, "ml_bianca": 5.86, "hd95_wmhseg": 4.7, "hd95_bianca": 10.8, "lrec_wmhseg": 0.63, "lrec_bianca": 0.891, "laes": 46, "mm0": [-2.87, 7.35, 6.83], "schichten": 47, "kb": 501}, {"sub": "sub-149", "standort": "Utrecht", "dice_wmhseg": 0.7205, "dice_bianca": 0.6012, "ref_voxel": 5567, "ref_ml": 15.34, "ml_wmhseg": 22.28, "ml_bianca": 12.61, "hd95_wmhseg": 6.0, "hd95_bianca": 9.3, "lrec_wmhseg": 0.786, "lrec_bianca": 0.398, "laes": 98, "mm0": [-13.75, -25.97, 44.45], "schichten": 46, "kb": 645}, {"sub": "sub-071", "standort": "Amsterdam", "dice_wmhseg": 0.7221, "dice_bianca": 0.7766, "ref_voxel": 6281, "ref_ml": 22.08, "ml_wmhseg": 38.0, "ml_bianca": 30.75, "hd95_wmhseg": 2.9, "hd95_bianca": 2.6, "lrec_wmhseg": 0.857, "lrec_bianca": 0.673, "laes": 98, "mm0": [-9.11, 27.73, 21.17], "schichten": 47, "kb": 504}, {"sub": "sub-105", "standort": "Amsterdam", "dice_wmhseg": 0.7266, "dice_bianca": 0.4137, "ref_voxel": 1937, "ref_ml": 3.39, "ml_wmhseg": 4.57, "ml_bianca": 12.44, "hd95_wmhseg": 3.2, "hd95_bianca": 19.4, "lrec_wmhseg": 0.562, "lrec_bianca": 0.875, "laes": 32, "mm0": [-1.83, -11.64, 27.28], "schichten": 50, "kb": 911}, {"sub": "sub-066", "standort": "Amsterdam", "dice_wmhseg": 0.733, "dice_bianca": 0.7023, "ref_voxel": 4181, "ref_ml": 19.75, "ml_wmhseg": 31.7, "ml_bianca": 31.54, "hd95_wmhseg": 3.0, "hd95_bianca": 3.3, "lrec_wmhseg": 0.927, "lrec_bianca": 0.81, "laes": 179, "mm0": [-0.82, 23.78, 9.36], "schichten": 52, "kb": 506}, {"sub": "sub-096", "standort": "Amsterdam", "dice_wmhseg": 0.7334, "dice_bianca": 0.6974, "ref_voxel": 3282, "ref_ml": 11.54, "ml_wmhseg": 18.41, "ml_bianca": 17.45, "hd95_wmhseg": 2.3, "hd95_bianca": 5.7, "lrec_wmhseg": 0.755, "lrec_bianca": 0.698, "laes": 159, "mm0": [-4.09, 26.84, 24.25], "schichten": 48, "kb": 464}, {"sub": "sub-092", "standort": "Amsterdam", "dice_wmhseg": 0.7408, "dice_bianca": 0.7247, "ref_voxel": 3790, "ref_ml": 13.32, "ml_wmhseg": 20.64, "ml_bianca": 22.01, "hd95_wmhseg": 3.0, "hd95_bianca": 3.0, "lrec_wmhseg": 0.849, "lrec_bianca": 0.811, "laes": 53, "mm0": [-9.0, 37.45, 32.66], "schichten": 50, "kb": 507}, {"sub": "sub-087", "standort": "Amsterdam", "dice_wmhseg": 0.7418, "dice_bianca": 0.6856, "ref_voxel": 4089, "ref_ml": 14.38, "ml_wmhseg": 23.11, "ml_bianca": 25.97, "hd95_wmhseg": 2.3, "hd95_bianca": 3.8, "lrec_wmhseg": 0.935, "lrec_bianca": 0.892, "laes": 93, "mm0": [-0.17, 40.46, 19.42], "schichten": 51, "kb": 585}, {"sub": "sub-108", "standort": "Amsterdam", "dice_wmhseg": 0.7469, "dice_bianca": 0.739, "ref_voxel": 7586, "ref_ml": 13.28, "ml_wmhseg": 17.76, "ml_bianca": 19.93, "hd95_wmhseg": 2.1, "hd95_bianca": 3.0, "lrec_wmhseg": 0.62, "lrec_bianca": 0.768, "laes": 142, "mm0": [-1.77, -1.94, -12.27], "schichten": 49, "kb": 986}, {"sub": "sub-070", "standort": "Amsterdam", "dice_wmhseg": 0.7487, "dice_bianca": 0.7148, "ref_voxel": 6709, "ref_ml": 31.68, "ml_wmhseg": 49.47, "ml_bianca": 36.07, "hd95_wmhseg": 2.7, "hd95_bianca": 3.5, "lrec_wmhseg": 0.902, "lrec_bianca": 0.753, "laes": 174, "mm0": [12.17, 23.04, 15.2], "schichten": 54, "kb": 464}, {"sub": "sub-065", "standort": "Amsterdam", "dice_wmhseg": 0.7496, "dice_bianca": 0.6497, "ref_voxel": 2768, "ref_ml": 13.07, "ml_wmhseg": 18.54, "ml_bianca": 20.12, "hd95_wmhseg": 3.0, "hd95_bianca": 19.8, "lrec_wmhseg": 0.923, "lrec_bianca": 0.558, "laes": 52, "mm0": [-13.31, 8.37, -28.93], "schichten": 52, "kb": 433}, {"sub": "sub-146", "standort": "Utrecht", "dice_wmhseg": 0.7505, "dice_bianca": 0.6269, "ref_voxel": 2724, "ref_ml": 7.51, "ml_wmhseg": 9.04, "ml_bianca": 8.38, "hd95_wmhseg": 9.2, "hd95_bianca": 20.9, "lrec_wmhseg": 0.525, "lrec_bianca": 0.311, "laes": 61, "mm0": [-19.19, -6.54, -13.52], "schichten": 46, "kb": 676}, {"sub": "sub-133", "standort": "Singapore", "dice_wmhseg": 0.753, "dice_bianca": 0.7532, "ref_voxel": 7427, "ref_ml": 22.28, "ml_wmhseg": 35.44, "ml_bianca": 32.58, "hd95_wmhseg": 3.2, "hd95_bianca": 3.6, "lrec_wmhseg": 0.907, "lrec_bianca": 0.701, "laes": 107, "mm0": [4.48, 9.79, 14.72], "schichten": 47, "kb": 601}, {"sub": "sub-076", "standort": "Amsterdam", "dice_wmhseg": 0.7547, "dice_bianca": 0.6576, "ref_voxel": 2748, "ref_ml": 9.66, "ml_wmhseg": 14.92, "ml_bianca": 17.61, "hd95_wmhseg": 2.9, "hd95_bianca": 6.2, "lrec_wmhseg": 0.849, "lrec_bianca": 0.774, "laes": 53, "mm0": [9.84, 51.68, 3.1], "schichten": 50, "kb": 539}, {"sub": "sub-166", "standort": "Utrecht", "dice_wmhseg": 0.7568, "dice_bianca": 0.5891, "ref_voxel": 7943, "ref_ml": 21.88, "ml_wmhseg": 25.11, "ml_bianca": 16.26, "hd95_wmhseg": 3.1, "hd95_bianca": 13.0, "lrec_wmhseg": 0.805, "lrec_bianca": 0.463, "laes": 231, "mm0": [-3.57, -4.14, 22.15], "schichten": 48, "kb": 769}, {"sub": "sub-150", "standort": "Utrecht", "dice_wmhseg": 0.759, "dice_bianca": 0.6831, "ref_voxel": 4287, "ref_ml": 11.81, "ml_wmhseg": 15.9, "ml_bianca": 20.96, "hd95_wmhseg": 7.9, "hd95_bianca": 8.6, "lrec_wmhseg": 0.764, "lrec_bianca": 0.855, "laes": 55, "mm0": [-1.32, -9.75, -0.75], "schichten": 47, "kb": 758}, {"sub": "sub-110", "standort": "Amsterdam", "dice_wmhseg": 0.7611, "dice_bianca": 0.5707, "ref_voxel": 8061, "ref_ml": 14.11, "ml_wmhseg": 18.99, "ml_bianca": 22.75, "hd95_wmhseg": 3.0, "hd95_bianca": 29.2, "lrec_wmhseg": 0.654, "lrec_bianca": 0.399, "laes": 188, "mm0": [-8.18, 6.99, 18.78], "schichten": 57, "kb": 1280}, {"sub": "sub-163", "standort": "Utrecht", "dice_wmhseg": 0.7738, "dice_bianca": 0.6545, "ref_voxel": 1735, "ref_ml": 4.78, "ml_wmhseg": 5.47, "ml_bianca": 8.15, "hd95_wmhseg": 3.0, "hd95_bianca": 6.3, "lrec_wmhseg": 0.718, "lrec_bianca": 0.732, "laes": 71, "mm0": [7.87, -33.24, 43.76], "schichten": 45, "kb": 677}, {"sub": "sub-102", "standort": "Amsterdam", "dice_wmhseg": 0.7744, "dice_bianca": 0.6175, "ref_voxel": 6713, "ref_ml": 11.75, "ml_wmhseg": 14.96, "ml_bianca": 24.65, "hd95_wmhseg": 3.0, "hd95_bianca": 6.1, "lrec_wmhseg": 0.682, "lrec_bianca": 0.869, "laes": 107, "mm0": [3.46, 10.67, 31.09], "schichten": 48, "kb": 1036}, {"sub": "sub-095", "standort": "Amsterdam", "dice_wmhseg": 0.7755, "dice_bianca": 0.6714, "ref_voxel": 3109, "ref_ml": 10.93, "ml_wmhseg": 16.53, "ml_bianca": 20.5, "hd95_wmhseg": 2.9, "hd95_bianca": 6.2, "lrec_wmhseg": 0.77, "lrec_bianca": 0.918, "laes": 61, "mm0": [-8.0, 27.64, 48.47], "schichten": 48, "kb": 477}, {"sub": "sub-082", "standort": "Amsterdam", "dice_wmhseg": 0.777, "dice_bianca": 0.7925, "ref_voxel": 15425, "ref_ml": 54.23, "ml_wmhseg": 79.7, "ml_bianca": 61.03, "hd95_wmhseg": 3.0, "hd95_bianca": 3.2, "lrec_wmhseg": 0.817, "lrec_bianca": 0.518, "laes": 191, "mm0": [-4.34, 23.15, 22.64], "schichten": 54, "kb": 606}, {"sub": "sub-154", "standort": "Utrecht", "dice_wmhseg": 0.7809, "dice_bianca": 0.6549, "ref_voxel": 7117, "ref_ml": 19.61, "ml_wmhseg": 27.03, "ml_bianca": 21.76, "hd95_wmhseg": 2.7, "hd95_bianca": 35.1, "lrec_wmhseg": 0.7, "lrec_bianca": 0.442, "laes": 120, "mm0": [-2.26, -23.99, -12.97], "schichten": 47, "kb": 846}, {"sub": "sub-094", "standort": "Amsterdam", "dice_wmhseg": 0.781, "dice_bianca": 0.7722, "ref_voxel": 7542, "ref_ml": 26.52, "ml_wmhseg": 39.67, "ml_bianca": 40.93, "hd95_wmhseg": 2.9, "hd95_bianca": 3.7, "lrec_wmhseg": 0.8, "lrec_bianca": 0.882, "laes": 85, "mm0": [1.22, 28.0, 8.66], "schichten": 57, "kb": 655}, {"sub": "sub-145", "standort": "Utrecht", "dice_wmhseg": 0.7834, "dice_bianca": 0.7071, "ref_voxel": 5176, "ref_ml": 14.26, "ml_wmhseg": 15.83, "ml_bianca": 21.05, "hd95_wmhseg": 3.0, "hd95_bianca": 3.7, "lrec_wmhseg": 0.716, "lrec_bianca": 0.724, "laes": 134, "mm0": [10.65, -15.82, 2.97], "schichten": 44, "kb": 603}, {"sub": "sub-121", "standort": "Singapore", "dice_wmhseg": 0.7951, "dice_bianca": 0.7957, "ref_voxel": 6058, "ref_ml": 18.17, "ml_wmhseg": 25.38, "ml_bianca": 23.51, "hd95_wmhseg": 3.3, "hd95_bianca": 3.2, "lrec_wmhseg": 0.87, "lrec_bianca": 0.717, "laes": 92, "mm0": [7.79, -8.36, 22.64], "schichten": 46, "kb": 539}, {"sub": "sub-132", "standort": "Singapore", "dice_wmhseg": 0.8028, "dice_bianca": 0.8201, "ref_voxel": 3968, "ref_ml": 11.9, "ml_wmhseg": 17.28, "ml_bianca": 15.69, "hd95_wmhseg": 3.0, "hd95_bianca": 3.0, "lrec_wmhseg": 0.829, "lrec_bianca": 0.659, "laes": 41, "mm0": [-13.04, 1.4, 15.47], "schichten": 44, "kb": 440}, {"sub": "sub-138", "standort": "Singapore", "dice_wmhseg": 0.8058, "dice_bianca": 0.7817, "ref_voxel": 6055, "ref_ml": 18.17, "ml_wmhseg": 25.52, "ml_bianca": 25.95, "hd95_wmhseg": 2.2, "hd95_bianca": 3.0, "lrec_wmhseg": 0.896, "lrec_bianca": 0.833, "laes": 48, "mm0": [3.4, 25.12, 21.26], "schichten": 47, "kb": 548}, {"sub": "sub-125", "standort": "Singapore", "dice_wmhseg": 0.8084, "dice_bianca": 0.7851, "ref_voxel": 7762, "ref_ml": 23.29, "ml_wmhseg": 30.48, "ml_bianca": 25.51, "hd95_wmhseg": 3.0, "hd95_bianca": 3.0, "lrec_wmhseg": 0.789, "lrec_bianca": 0.484, "laes": 161, "mm0": [10.2, 6.64, 26.16], "schichten": 48, "kb": 633}, {"sub": "sub-127", "standort": "Singapore", "dice_wmhseg": 0.814, "dice_bianca": 0.85, "ref_voxel": 9051, "ref_ml": 27.15, "ml_wmhseg": 38.3, "ml_bianca": 32.68, "hd95_wmhseg": 3.0, "hd95_bianca": 2.2, "lrec_wmhseg": 0.88, "lrec_bianca": 0.65, "laes": 100, "mm0": [-2.59, 6.21, 29.77], "schichten": 48, "kb": 515}, {"sub": "sub-128", "standort": "Singapore", "dice_wmhseg": 0.8169, "dice_bianca": 0.8235, "ref_voxel": 6758, "ref_ml": 20.27, "ml_wmhseg": 28.97, "ml_bianca": 27.75, "hd95_wmhseg": 2.2, "hd95_bianca": 2.8, "lrec_wmhseg": 0.941, "lrec_bianca": 0.824, "laes": 68, "mm0": [0.83, 17.72, 32.74], "schichten": 45, "kb": 526}, {"sub": "sub-160", "standort": "Utrecht", "dice_wmhseg": 0.818, "dice_bianca": 0.7685, "ref_voxel": 5401, "ref_ml": 14.88, "ml_wmhseg": 18.52, "ml_bianca": 20.29, "hd95_wmhseg": 1.9, "hd95_bianca": 3.1, "lrec_wmhseg": 0.667, "lrec_bianca": 0.782, "laes": 78, "mm0": [7.56, -15.57, 29.08], "schichten": 48, "kb": 795}, {"sub": "sub-135", "standort": "Singapore", "dice_wmhseg": 0.8204, "dice_bianca": 0.8326, "ref_voxel": 9640, "ref_ml": 28.92, "ml_wmhseg": 37.46, "ml_bianca": 33.92, "hd95_wmhseg": 3.0, "hd95_bianca": 3.0, "lrec_wmhseg": 0.854, "lrec_bianca": 0.646, "laes": 82, "mm0": [8.24, 13.93, 19.26], "schichten": 46, "kb": 555}, {"sub": "sub-123", "standort": "Singapore", "dice_wmhseg": 0.825, "dice_bianca": 0.8224, "ref_voxel": 4101, "ref_ml": 12.3, "ml_wmhseg": 16.59, "ml_bianca": 15.55, "hd95_wmhseg": 2.2, "hd95_bianca": 2.2, "lrec_wmhseg": 0.886, "lrec_bianca": 0.81, "laes": 79, "mm0": [-5.43, -5.25, 26.7], "schichten": 45, "kb": 471}, {"sub": "sub-161", "standort": "Utrecht", "dice_wmhseg": 0.8266, "dice_bianca": 0.835, "ref_voxel": 5113, "ref_ml": 14.09, "ml_wmhseg": 16.62, "ml_bianca": 14.46, "hd95_wmhseg": 1.4, "hd95_bianca": 3.0, "lrec_wmhseg": 0.625, "lrec_bianca": 0.6, "laes": 120, "mm0": [9.45, -27.36, 8.97], "schichten": 44, "kb": 686}, {"sub": "sub-107", "standort": "Amsterdam", "dice_wmhseg": 0.8324, "dice_bianca": 0.6435, "ref_voxel": 5432, "ref_ml": 9.51, "ml_wmhseg": 12.51, "ml_bianca": 19.63, "hd95_wmhseg": 1.1, "hd95_bianca": 9.2, "lrec_wmhseg": 0.706, "lrec_bianca": 0.912, "laes": 34, "mm0": [1.2, 10.4, 34.8], "schichten": 50, "kb": 1005}, {"sub": "sub-083", "standort": "Amsterdam", "dice_wmhseg": 0.8334, "dice_bianca": 0.8264, "ref_voxel": 8482, "ref_ml": 29.82, "ml_wmhseg": 38.8, "ml_bianca": 37.24, "hd95_wmhseg": 1.5, "hd95_bianca": 2.3, "lrec_wmhseg": 0.823, "lrec_bianca": 0.681, "laes": 141, "mm0": [-0.88, 18.97, 24.1], "schichten": 50, "kb": 542}, {"sub": "sub-072", "standort": "Amsterdam", "dice_wmhseg": 0.8354, "dice_bianca": 0.8475, "ref_voxel": 13342, "ref_ml": 46.91, "ml_wmhseg": 61.52, "ml_bianca": 51.76, "hd95_wmhseg": 2.3, "hd95_bianca": 2.3, "lrec_wmhseg": 0.885, "lrec_bianca": 0.664, "laes": 113, "mm0": [-7.88, 23.65, 11.81], "schichten": 51, "kb": 580}, {"sub": "sub-126", "standort": "Singapore", "dice_wmhseg": 0.8386, "dice_bianca": 0.8185, "ref_voxel": 6754, "ref_ml": 20.26, "ml_wmhseg": 26.08, "ml_bianca": 24.26, "hd95_wmhseg": 2.0, "hd95_bianca": 2.8, "lrec_wmhseg": 0.862, "lrec_bianca": 0.575, "laes": 87, "mm0": [4.25, -0.13, 33.66], "schichten": 48, "kb": 593}, {"sub": "sub-155", "standort": "Utrecht", "dice_wmhseg": 0.8425, "dice_bianca": 0.7849, "ref_voxel": 8380, "ref_ml": 23.09, "ml_wmhseg": 29.17, "ml_bianca": 33.36, "hd95_wmhseg": 1.9, "hd95_bianca": 3.0, "lrec_wmhseg": 0.629, "lrec_bianca": 0.596, "laes": 89, "mm0": [-7.47, -0.94, 55.62], "schichten": 45, "kb": 653}, {"sub": "sub-136", "standort": "Singapore", "dice_wmhseg": 0.8439, "dice_bianca": 0.8118, "ref_voxel": 6007, "ref_ml": 18.02, "ml_wmhseg": 23.61, "ml_bianca": 23.22, "hd95_wmhseg": 2.0, "hd95_bianca": 3.0, "lrec_wmhseg": 0.875, "lrec_bianca": 0.625, "laes": 88, "mm0": [4.0, 3.43, 28.84], "schichten": 47, "kb": 604}, {"sub": "sub-101", "standort": "Amsterdam", "dice_wmhseg": 0.8484, "dice_bianca": 0.8564, "ref_voxel": 25744, "ref_ml": 45.05, "ml_wmhseg": 56.1, "ml_bianca": 54.09, "hd95_wmhseg": 1.7, "hd95_bianca": 1.7, "lrec_wmhseg": 0.625, "lrec_bianca": 0.695, "laes": 128, "mm0": [-2.65, 2.74, 38.32], "schichten": 50, "kb": 1233}, {"sub": "sub-062", "standort": "Amsterdam", "dice_wmhseg": 0.863, "dice_bianca": 0.823, "ref_voxel": 14662, "ref_ml": 69.24, "ml_wmhseg": 81.94, "ml_bianca": 57.32, "hd95_wmhseg": 1.8, "hd95_bianca": 2.9, "lrec_wmhseg": 0.857, "lrec_bianca": 0.469, "laes": 147, "mm0": [-11.56, 78.07, 9.4], "schichten": 48, "kb": 392}, {"sub": "sub-151", "standort": "Utrecht", "dice_wmhseg": 0.8635, "dice_bianca": 0.6833, "ref_voxel": 12679, "ref_ml": 34.93, "ml_wmhseg": 38.55, "ml_bianca": 25.19, "hd95_wmhseg": 1.9, "hd95_bianca": 10.2, "lrec_wmhseg": 0.652, "lrec_bianca": 0.326, "laes": 92, "mm0": [1.37, -29.88, 52.62], "schichten": 48, "kb": 688}, {"sub": "sub-088", "standort": "Amsterdam", "dice_wmhseg": 0.8655, "dice_bianca": 0.8464, "ref_voxel": 14627, "ref_ml": 51.43, "ml_wmhseg": 54.57, "ml_bianca": 54.47, "hd95_wmhseg": 2.4, "hd95_bianca": 2.4, "lrec_wmhseg": 0.733, "lrec_bianca": 0.622, "laes": 45, "mm0": [-3.6, 15.85, 36.98], "schichten": 48, "kb": 550}, {"sub": "sub-169", "standort": "Utrecht", "dice_wmhseg": 0.8657, "dice_bianca": 0.8627, "ref_voxel": 10396, "ref_ml": 28.64, "ml_wmhseg": 29.15, "ml_bianca": 29.89, "hd95_wmhseg": 1.4, "hd95_bianca": 1.9, "lrec_wmhseg": 0.63, "lrec_bianca": 0.522, "laes": 92, "mm0": [0.09, -14.89, 58.88], "schichten": 45, "kb": 620}, {"sub": "sub-144", "standort": "Utrecht", "dice_wmhseg": 0.8696, "dice_bianca": 0.857, "ref_voxel": 18658, "ref_ml": 51.41, "ml_wmhseg": 56.43, "ml_bianca": 52.98, "hd95_wmhseg": 1.4, "hd95_bianca": 2.7, "lrec_wmhseg": 0.553, "lrec_bianca": 0.434, "laes": 152, "mm0": [1.69, -12.29, 46.99], "schichten": 47, "kb": 693}, {"sub": "sub-112", "standort": "Singapore", "dice_wmhseg": 0.8773, "dice_bianca": 0.8707, "ref_voxel": 8281, "ref_ml": 24.84, "ml_wmhseg": 29.68, "ml_bianca": 26.74, "hd95_wmhseg": 1.4, "hd95_bianca": 2.0, "lrec_wmhseg": 0.8, "lrec_bianca": 0.631, "laes": 65, "mm0": [2.96, 13.72, 19.7], "schichten": 45, "kb": 580}, {"sub": "sub-122", "standort": "Singapore", "dice_wmhseg": 0.8835, "dice_bianca": 0.738, "ref_voxel": 11660, "ref_ml": 34.98, "ml_wmhseg": 42.57, "ml_bianca": 33.39, "hd95_wmhseg": 1.4, "hd95_bianca": 15.1, "lrec_wmhseg": 0.88, "lrec_bianca": 0.46, "laes": 50, "mm0": [-7.6, 11.71, 54.61], "schichten": 47, "kb": 608}, {"sub": "sub-152", "standort": "Utrecht", "dice_wmhseg": 0.8913, "dice_bianca": 0.8861, "ref_voxel": 19466, "ref_ml": 53.63, "ml_wmhseg": 57.52, "ml_bianca": 50.14, "hd95_wmhseg": 1.9, "hd95_bianca": 2.1, "lrec_wmhseg": 0.682, "lrec_bianca": 0.388, "laes": 85, "mm0": [1.58, -44.36, 38.14], "schichten": 47, "kb": 663}, {"sub": "sub-165", "standort": "Utrecht", "dice_wmhseg": 0.8919, "dice_bianca": 0.887, "ref_voxel": 14953, "ref_ml": 41.2, "ml_wmhseg": 46.31, "ml_bianca": 45.71, "hd95_wmhseg": 1.4, "hd95_bianca": 1.9, "lrec_wmhseg": 0.592, "lrec_bianca": 0.513, "laes": 76, "mm0": [-5.98, -7.01, 17.32], "schichten": 48, "kb": 806}, {"sub": "sub-137", "standort": "Singapore", "dice_wmhseg": 0.892, "dice_bianca": 0.8319, "ref_voxel": 20344, "ref_ml": 61.03, "ml_wmhseg": 61.33, "ml_bianca": 48.09, "hd95_wmhseg": 1.4, "hd95_bianca": 3.2, "lrec_wmhseg": 0.69, "lrec_bianca": 0.305, "laes": 187, "mm0": [-0.03, 15.58, 24.13], "schichten": 47, "kb": 589}, {"sub": "sub-074", "standort": "Amsterdam", "dice_wmhseg": 0.8944, "dice_bianca": 0.8718, "ref_voxel": 11169, "ref_ml": 39.27, "ml_wmhseg": 45.6, "ml_bianca": 41.97, "hd95_wmhseg": 1.2, "hd95_bianca": 2.3, "lrec_wmhseg": 0.75, "lrec_bianca": 0.625, "laes": 64, "mm0": [3.6, 22.91, 16.78], "schichten": 51, "kb": 506}, {"sub": "sub-113", "standort": "Singapore", "dice_wmhseg": 0.8971, "dice_bianca": 0.8578, "ref_voxel": 26837, "ref_ml": 80.51, "ml_wmhseg": 80.19, "ml_bianca": 69.02, "hd95_wmhseg": 2.0, "hd95_bianca": 3.0, "lrec_wmhseg": 0.746, "lrec_bianca": 0.356, "laes": 59, "mm0": [4.57, 4.06, 29.61], "schichten": 48, "kb": 666}, {"sub": "sub-153", "standort": "Utrecht", "dice_wmhseg": 0.899, "dice_bianca": 0.6972, "ref_voxel": 14228, "ref_ml": 39.2, "ml_wmhseg": 44.14, "ml_bianca": 27.83, "hd95_wmhseg": 1.4, "hd95_bianca": 24.3, "lrec_wmhseg": 0.75, "lrec_bianca": 0.141, "laes": 64, "mm0": [4.24, -42.01, 3.56], "schichten": 48, "kb": 592}];
+const ZAHLEN = {"n": 110, "wmhseg": 0.695, "bianca": 0.604, "diff": 0.091, "lo": 0.072, "hi": 0.11, "besser": 92, "drittel": [0.159, 0.078, 0.034], "sens": [0.835, 0.856], "praez": [0.615, 0.513], "hd95": [5.973, 10.219], "avd": [48.896, 133.064], "laes_recall": [0.72, 0.707], "laes_f1": [0.678, 0.317], "roc_auc": [0.953, 0.989], "pr_auc": [0.794, 0.722]};
+const FARBEN = [[57,211,83],[240,136,62],[88,166,255]];
+const SCHLUESSEL = ['ref','bianca','wmhseg'];
+const ACHSE = {ax:2, cor:1, sag:0};
+const st = {i:0, ansicht:'ax', deckkraft:.55, masken:true, kreuz:false, lauf:0};
+const NV = [];
+
+function solid(r,g,b){ return {R:[0,r],G:[0,g],B:[0,b],A:[0,255],I:[0,255]}; }
+
+async function start(){
+  for (let k=0;k<3;k++){
+    const nv = new niivue.Niivue({backColor:[0,0,0,1], crosshairColor:[1,1,1,.6], crosshairWidth:0,
+      textHeight:.035, isOrientCube:false, dragAndDropEnabled:false, multiplanarForceRender:false});
+    await nv.attachTo('c'+k);
+    nv.addColormap('qc'+k, solid(...FARBEN[k]));
+    nv.setSliceType(nv.sliceTypeAxial);
+    nv.setInterpolation(true);                 // nearest: Voxel bleiben Voxel
+    nv.opts.dragMode = nv.dragModes.pan;      // rechte Maustaste: Zoom/Verschieben
+    nv.onLocationChange = zeigeSchicht;
+    NV.push(nv);
+  }
+  for (let k=0;k<3;k++) NV[k].broadcastTo(NV.filter((_,j)=>j!==k), {'2d':true,'3d':true});
+  baueListe(); baueInfo();
+  const h = location.hash.replace('#','');
+  const i0 = Math.max(0, FAELLE.findIndex(f=>f.sub===h));
+  await waehle(i0);
+}
+
+const ORDNUNG={dice:(a,b)=>a.dice_wmhseg-b.dice_wmhseg, diff:(a,b)=>(a.dice_wmhseg-a.dice_bianca)-(b.dice_wmhseg-b.dice_bianca),
+  last:(a,b)=>b.ref_ml-a.ref_ml, klein:(a,b)=>a.ref_ml-b.ref_ml, name:(a,b)=>a.sub.localeCompare(b.sub)};
+function baueListe(){
+  const el = document.getElementById('liste'); el.innerHTML='';
+  document.getElementById('anzahl').textContent=FAELLE.length;
+  FAELLE.forEach((f,i)=>{
+    const d=document.createElement('div'); d.className='fall'; d.dataset.i=i;
+    d.innerHTML=`<span>${f.sub}</span><span class="a">${f.dice_wmhseg.toFixed(3)}</span><span class="b">${f.dice_bianca.toFixed(3)}</span>`+
+      `<small>${f.standort} &middot; Referenz ${f.ref_ml} ml</small>`;
+    d.addEventListener('click',()=>waehle(i));
+    el.appendChild(d);
+  });
+}
+
+function baueInfo(){
+  const z=ZAHLEN, n=FAELLE.length;
+  document.getElementById('zahlenTitel').textContent=`Der ganze Testteil: ${z.n} Faelle, gepaart`;
+  document.getElementById('zahlenText').innerHTML=`wmhseg <b>${z.wmhseg.toFixed(3)}</b> gegen BIANCA <b>${z.bianca.toFixed(3)}</b> (Dice, Mittel), `+
+    `Differenz <b>${z.diff>0?'+':''}${z.diff.toFixed(3)}</b> mit 95-%-Intervall [${z.lo>0?'+':''}${z.lo.toFixed(3)}; ${z.hi>0?'+':''}${z.hi.toFixed(3)}] `+
+    `(Bootstrap ueber Fallpaare, 10&nbsp;000 Ziehungen), wmhseg besser in <b>${z.besser} von ${z.n}</b> Faellen.`;
+  const v=(x,n)=>`+${x.toFixed(n)}`.replace('+-','\u2212');
+  document.getElementById('woher').innerHTML=`Woher der Vorsprung kommt: die <b>Praezision</b> ist besser (${z.praez[0]} gegen ${z.praez[1]}), `+
+    `die <b>Sensitivitaet</b> ${z.sens[0]<z.sens[1]?'leicht schlechter':'aehnlich'} (${z.sens[0]} gegen ${z.sens[1]}). wmhseg markiert weniger daneben. `+
+    `Nach Laesionslast (Drittel klein / mittel / gross) betraegt der Dice-Abstand ${z.drittel.map(x=>v(x,3)).join(' / ')}.`;
+  const M=[['Dice','wmhseg','bianca'],['Sensitivitaet','sens'],['Praezision','praez'],['HD95 mm','hd95'],['AVD %','avd'],
+           ['Laesions-Recall','laes_recall'],['Laesions-F1','laes_f1'],['ROC-AUC','roc_auc'],['PR-AUC','pr_auc']];
+  document.getElementById('mtab').innerHTML='<tr><th>Mittel ueber '+z.n+' Faelle<th>wmhseg<th>BIANCA</tr>'+
+    M.map(m=>m.length===3?`<tr><td>${m[0]}<td>${z.wmhseg.toFixed(3)}<td>${z.bianca.toFixed(3)}</tr>`:`<tr><td>${m[0]}<td>${z[m[1]][0]}<td>${z[m[1]][1]}</tr>`).join('');
+  const a=FAELLE.map(f=>f.dice_wmhseg), b=FAELLE.map(f=>f.dice_bianca);
+  const m=x=>x.reduce((s,v)=>s+v,0)/x.length;
+  document.getElementById('stichprobe').innerHTML=`${n} Faelle zum Ansehen (Mittel wmhseg ${m(a).toFixed(3)}, BIANCA ${m(b).toFixed(3)}). `+
+    (n<z.n?`Das ist eine Stichprobe zum Hinschauen, kein Ergebnis &mdash; das Ergebnis steht oben und beruht auf allen ${z.n}.`:'');
+  document.getElementById('tab').innerHTML='<tr><th>Fall<th>Ort<th>Dice wmhseg<th>Dice BIANCA<th>Referenz ml<th>wmhseg ml<th>BIANCA ml<th>HD95 mm (w / B)<th>Laesions-Recall (w / B)</tr>'+
+    FAELLE.map(f=>`<tr><td>${f.sub}<td>${f.standort}<td>${f.dice_wmhseg.toFixed(3)}<td>${f.dice_bianca.toFixed(3)}<td>${f.ref_ml}<td>${f.ml_wmhseg}<td>${f.ml_bianca}`+
+      `<td>${f.hd95_wmhseg??'–'} / ${f.hd95_bianca??'–'}<td>${f.lrec_wmhseg??'–'} / ${f.lrec_bianca??'–'}</tr>`).join('');
+}
+
+function ladeDaten(sub){
+  if (window.QC_DATEN && window.QC_DATEN[sub]) return Promise.resolve(window.QC_DATEN[sub]);
+  return new Promise((ok,nein)=>{
+    const s=document.createElement('script'); s.src=`daten/${sub}.js`;
+    s.onload=()=>{ s.remove(); window.QC_DATEN&&window.QC_DATEN[sub]?ok(window.QC_DATEN[sub]):nein(new Error('leer '+sub)); };
+    s.onerror=()=>{ s.remove(); nein(new Error('nicht ladbar '+sub)); };
+    document.head.appendChild(s);
+  });
+}
+
+async function waehle(i){
+  if (i<0||i>=FAELLE.length) return;
+  st.i=i; const f=FAELLE[i]; const lauf=++st.lauf;
+  document.querySelectorAll('.fall').forEach(e=>e.classList.toggle('on',+e.dataset.i===i));
+  const akt=document.querySelector('.fall.on'); if(akt) akt.scrollIntoView({block:'nearest'});
+  document.getElementById('fallName').innerHTML=`<b>${f.sub}</b> &middot; ${f.standort}`;
+  ['w0','w1','w2'].forEach((id,k)=>document.getElementById(id).textContent=
+    k===0?`${f.ref_ml} ml · ${f.laes} Laesionen`:`Dice ${(k===1?f.dice_bianca:f.dice_wmhseg).toFixed(3)} · HD95 ${(k===1?f.hd95_bianca:f.hd95_wmhseg)??'–'} mm · ${k===1?f.ml_bianca:f.ml_wmhseg} ml`);
+  history.replaceState(null,'','#'+f.sub);
+  const ans=document.getElementById('ansicht'); ans.classList.add('laedt');
+  let d; try{ d=await ladeDaten(f.sub); }catch(e){ ans.classList.remove('laedt'); alert(e.message); return; }
+  if (lauf!==st.lauf) return;                        // inzwischen weitergeblaettert
+  for (let k=0;k<3;k++){
+    const nv=NV[k];
+    for (const v of nv.volumes.slice()) nv.removeVolume(v);
+    const fl=await niivue.NVImage.loadFromBase64({base64:d.flair,name:'flair.nii.gz'});
+    fl.colormap='gray'; fl.cal_min=0; fl.cal_max=255;
+    const mk=await niivue.NVImage.loadFromBase64({base64:d[SCHLUESSEL[k]],name:SCHLUESSEL[k]+'.nii.gz'});
+    mk.colormap='qc'+k; mk.cal_min=.5; mk.cal_max=1; mk.opacity=st.masken?st.deckkraft:0;
+    if (lauf!==st.lauf) return;
+    nv.addVolume(fl); nv.addVolume(mk);
+  }
+  setzeAnsicht(st.ansicht);
+  setzeMM(f.mm0);
+  ans.classList.remove('laedt');
+  // Nachbarn vorladen, damit die Pfeiltasten fluessig sind; Speicher begrenzen
+  [i+1,i-1].forEach(j=>{ if(FAELLE[j]) ladeDaten(FAELLE[j].sub).catch(()=>{}); });
+  if (window.QC_DATEN) for (const k of Object.keys(window.QC_DATEN)){
+    const j=FAELLE.findIndex(x=>x.sub===k); if (Math.abs(j-i)>2) delete window.QC_DATEN[k];
+  }
+}
+
+function setzeMM(mm){
+  for (const nv of NV){ if(!nv.volumes.length) continue; nv.scene.crosshairPos=nv.mm2frac(mm); nv.drawScene(); }
+  aktualisiereRegler();
+}
+function setzeAnsicht(a){
+  st.ansicht=a; document.querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===a));
+  for (const nv of NV) nv.setSliceType(a==='ax'?nv.sliceTypeAxial:a==='cor'?nv.sliceTypeCoronal:nv.sliceTypeSagittal);
+  aktualisiereRegler();
+}
+function schichtVox(){ const nv=NV[0]; if(!nv.volumes.length) return null;
+  const v=nv.frac2vox(nv.scene.crosshairPos); const ax=ACHSE[st.ansicht]; return {k:Math.round(v[ax]), n:nv.volumes[0].dimsRAS[ax+1], v}; }
+function aktualisiereRegler(){
+  const s=schichtVox(); if(!s) return;
+  const r=document.getElementById('schicht'); r.max=s.n-1; r.value=s.k;
+  document.getElementById('schichtText').textContent=`Schicht ${s.k+1} / ${s.n}`;
+}
+function zeigeSchicht(){ aktualisiereRegler(); }
+function schiebe(delta){
+  const s=schichtVox(); if(!s) return; const ziel=Math.max(0,Math.min(s.n-1,s.k+delta)); setzeSchicht(ziel);
+}
+function setzeSchicht(k){
+  const s=schichtVox(); if(!s) return; const v=Array.from(s.v); v[ACHSE[st.ansicht]]=k;
+  for (const nv of NV){ if(!nv.volumes.length) continue; nv.scene.crosshairPos=nv.vox2frac(v); nv.drawScene(); }
+  aktualisiereRegler();
+}
+function setzeMasken(){
+  for (const nv of NV){ if(nv.volumes.length>1){ nv.volumes[1].opacity=st.masken?st.deckkraft:0; nv.updateGLVolume(); } }
+  document.getElementById('maskeChip').classList.toggle('aus',!st.masken);
+}
+
+document.querySelectorAll('[data-v]').forEach(b=>b.addEventListener('click',()=>setzeAnsicht(b.dataset.v)));
+document.getElementById('op').addEventListener('input',e=>{ st.deckkraft=e.target.value/100; document.getElementById('opv').textContent=e.target.value+'%'; setzeMasken(); });
+document.getElementById('maskeChip').addEventListener('click',()=>{ st.masken=!st.masken; setzeMasken(); });
+document.getElementById('fadenkreuz').addEventListener('click',e=>{ st.kreuz=!st.kreuz; e.target.classList.toggle('on',st.kreuz); for(const nv of NV) nv.setCrosshairWidth(st.kreuz?1:0); });
+document.getElementById('infoKnopf').addEventListener('click',e=>{ const on=document.getElementById('info').classList.toggle('on'); e.target.classList.toggle('on',on); });
+document.getElementById('sortierung').addEventListener('change',e=>{
+  const sub=FAELLE[st.i].sub; FAELLE.sort(ORDNUNG[e.target.value]); baueListe(); baueInfo();
+  st.i=FAELLE.findIndex(f=>f.sub===sub);
+  document.querySelectorAll('.fall').forEach(x=>x.classList.toggle('on',+x.dataset.i===st.i));
+  const akt=document.querySelector('.fall.on'); if(akt) akt.scrollIntoView({block:'nearest'}); e.target.blur();
+});
+document.getElementById('schicht').addEventListener('input',e=>setzeSchicht(+e.target.value));
+window.addEventListener('keydown',e=>{
+  if (e.target.tagName==='SELECT') return;
+  if (e.key==='ArrowDown'){ e.preventDefault(); e.stopPropagation(); waehle(st.i+1); }
+  else if (e.key==='ArrowUp'){ e.preventDefault(); e.stopPropagation(); waehle(st.i-1); }
+  else if (e.key==='ArrowRight'||e.key==='PageUp'){ e.preventDefault(); e.stopPropagation(); schiebe(+1); }
+  else if (e.key==='ArrowLeft'||e.key==='PageDown'){ e.preventDefault(); e.stopPropagation(); schiebe(-1); }
+  else if (e.key==='m'||e.key==='M'){ st.masken=!st.masken; setzeMasken(); }
+  else if (e.key==='Escape'){ document.getElementById('info').classList.remove('on'); document.getElementById('infoKnopf').classList.remove('on'); }
+},true);
+// Mausrad: selbst behandeln (Fangphase, vor NiiVue), damit ein Rastschritt genau eine Schicht ist
+// und alle drei Fenster sicher gemeinsam laufen. Touchpads liefern viele kleine Schritte -> aufsummieren.
+let radSumme=0;
+document.getElementById('fenster').addEventListener('wheel',e=>{
+  e.preventDefault(); e.stopPropagation();
+  radSumme += (e.deltaMode===1? e.deltaY*33 : e.deltaY);
+  const schritte = Math.trunc(radSumme/90); if(!schritte) return;
+  radSumme -= schritte*90; schiebe(-Math.sign(schritte)*Math.min(3,Math.abs(schritte)));
+},{capture:true,passive:false});
+window.addEventListener('resize',()=>{ for(const nv of NV) nv.resizeListener&&nv.resizeListener(); });
+window.QC={FAELLE,st,NV,schichtVox,waehle};   // fuer Tests und die Konsole
+start();
+</script>
+</body></html>
