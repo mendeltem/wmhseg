@@ -37,3 +37,10 @@ START: wmhseg --flair FLAIR_brain_biascorr.nii.gz --out wmh.nii.gz
 - Normiert wird INNERHALB der Hirnmaske, nicht ueber das Volumen.
 - Geschwellt wird ERST nach dem Rueckweg auf das FLAIR-Gitter.
 - Der 256er-Ausschnitt haengt am Schwerpunkt der Maske, nicht an der Bildmitte.
+
+## Nachtrag 18.09.2026
+- QC-Seite ist jetzt ein interaktiver Betrachter (NiiVue) mit allen 110 Challenge-Testfaellen und liegt im Zweig
+  `gh-pages` (lokal als Worktree `../wmhseg_seite/`), NICHT mehr unter `docs/` -- sonst zoege jedes `pip install`
+  66 MB Bilddaten mit. Bauen: `../qc_bauen.py` (Vorlage `../qc_vorlage.html`), Browsertest `../qc_test/probe.py`.
+- Metriken ueber Dice hinaus (HD95, ASSD, AVD, Laesionsebene, ROC/PR): `../metriken_alle.py`, Tabellen und
+  Abbildung `../metriken_tabellen.py` -> `assets/roc_pr.png`. Eigene Kohorten im README nur als Summen, Namen A/B/C.
